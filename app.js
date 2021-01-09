@@ -2,8 +2,15 @@ const express = require("express");
 const app = express();
 const swaggerJsDoc = require('swagger-jsdoc');
 const swaggerUi = require('swagger-ui-express');
+const mongoose = require('mongoose');
 
 const port = process.env.PORT || 5000;
+
+//mongoDb connection string
+const dbURI = 'mongodb+srv://dbadmin:pa55w0rd1@ecommerce.al6d0.mongodb.net/ecommerceDb?retryWrites=true&w=majority';
+mongoose.connect(dbURI, { useNewUrlParser: true, useUnifiedTopology: true })
+    .then((result) => console.log('connected to db'))
+    .catch((err) => console.log(err));
 
 //Extended: https://swagger.io/specification/#infoObject
 const swaggerOptions = {
