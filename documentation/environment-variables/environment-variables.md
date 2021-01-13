@@ -4,7 +4,9 @@
 
 - ACCESS_CONTROL_ALLOW_ORIGIN_LOCALHOST: e.g. `http://localhost:5000`.
 
-- DEV_MONGODB_DATABASE_URL: e.g. `mongodb://localhost/code_project`
+- DEV_MONGODB_DATABASE_URL: e.g. `mongodb://localhost/code_project` || 
+mongodb+srv://dbadmin:pa55w0rd1@ecommerce.al6d0.mongodb.net/ecommerceDb?retryWrites=true&w=majority
+
 - TEST_MONGODB_DATABASE_URL: e.g. `mongodb://localhost/code_project`
 
 - HOSTNAME: e.g. `localhost`
