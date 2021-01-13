@@ -1,64 +1,82 @@
-const express = require("express");
-const app = express();
+const path = require('path');
+const express = require('express');
+const dotenv = require('dotenv');
+const morgan = require('morgan');
+const colors = require('colors');
+const logger= require('./utils/winston-logger');
+const fs = require('fs');
+const mongoSanitize= require('express-mongo-sanitize');
+const setResHeaders = require('./middleware/headers-middleware');
+const helmet = require('helmet');
+const xss = require('xss-clean');
+const rateLimit = require('express-rate-limit');
 const swaggerJsDoc = require('swagger-jsdoc');
 const swaggerUi = require('swagger-ui-express');
-const mongoose = require('mongoose');
+const swaggerDocument = require('./configs/swagger.json');
+const hpp = require('hpp');
+const connectDB = require('./configs/mongodb-config');
 
-const port = process.env.PORT || 5000;
+//load env vars
+dotenv.config();
 
-//mongoDb connection string
-const dbURI = 'mongodb+srv://dbadmin:pa55w0rd1@ecommerce.al6d0.mongodb.net/ecommerceDb?retryWrites=true&w=majority';
-mongoose.connect(dbURI, { useNewUrlParser: true, useUnifiedTopology: true })
-    .then((result) => console.log('connected to db'))
-    .catch((err) => console.log(err));
+connectDB()
 
-//Extended: https://swagger.io/specification/#infoObject
-const swaggerOptions = {
-    swaggerDefinition: {
-        info: {
-            title: 'Customer API',
-            description: 'Customer API information',
-            contact: {
-                name: "Code project"
-            },
-            servers: ["http://localhost:5000"]
-        }
-    },
-    //['.routes/*.js']
-    apis: ["app.js"]
-}
+const app = express();
 
-const swaggerDocs = swaggerJsDoc(swaggerOptions);
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
+app.use(express.json());
 
-//ROUTES
-/**
- * @swagger
- * /customers:
- *  get:
- *      description: Use to request all customers
- *      responses:
- *          '200':
- *              description: A successful response
- */
-app.get('/customers', (req, res) => {
-    console.log("getting req");
-    res.status(200).send("Fetched Customer results");
-});
+//set response header
+app.use(setResHeaders);
 
-/**
- * @swagger
- * /customer:
- *  put:
- *      description: Use to create a customer
- *      responses:
- *          '201':
- *              description: A successful response
- */
-app.put('/customer', (req, res) => {
-    res.status(200).send("Successfully Created customer");
-});
+//swagger 
+app.use(
+  '/api-docs',
+  swaggerUi.serve,
+  swaggerUi.setup(swaggerDocument, {
+    explorer: true,
+  })
+);
 
-app.listen(port, () => {
-    console.log(`Server is running on port ${port}....`);
+
+// Server logs
+const accessLogStream = fs.createWriteStream(path.join(__dirname, 'logs', 'access.log'), { flags: 'a' });
+app.use([
+  morgan('combined'),
+  morgan('combined', { stream: accessLogStream }),
+]);
+
+//sanitize data
+app.use(mongoSanitize());
+
+// Set security headers
+app.use(helmet());
+
+// Prevent XSS attacks
+app.use(xss());
+
+// Rate limiting
+const limiter = rateLimit({
+    windowMs: 10 * 60 * 1000, //10mins
+    max: 100
+})
+
+app.use(limiter);
+
+// prevent http param pollution
+app.use(hpp());
+
+ 
+const PORT = parseInt(process.env.PORT) || 5000;
+
+
+const server = app.listen(PORT, logger.info(`server running in ${process.env.NODE_ENV} mode on port ${PORT}`.yellow.bold));
+
+
+
+//handle unhandled promise rejections
+process.on('unhandledRejection', (err, Promise) => {
+    console.log(`Error: ${err.message}`.red);
+
+    //close server & exit process
+    server.close(() => process.exit(1));
 });
