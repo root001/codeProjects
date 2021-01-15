@@ -12,6 +12,11 @@ mongoose.connect(dbURI, { useNewUrlParser: true, useUnifiedTopology: true })
     .then((result) => console.log('connected to db'))
     .catch((err) => console.log(err));
 
+//Body Parser; reading the data from the body to req.body(max 15kb)
+app.use(express.json({ limit: '15kb' }));
+
+//GLOBAL ERROR HANDLER MIDDLEWARE
+
 //Extended: https://swagger.io/specification/#infoObject
 const swaggerOptions = {
     swaggerDefinition: {
@@ -24,40 +29,15 @@ const swaggerOptions = {
             servers: ["http://localhost:5000"]
         }
     },
-    //['.routes/*.js']
-    apis: ["app.js"]
+    apis: ['.routes/*.js']
+        //apis: ["app.js"]
 }
 
 const swaggerDocs = swaggerJsDoc(swaggerOptions);
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 
 //ROUTES
-/**
- * @swagger
- * /customers:
- *  get:
- *      description: Use to request all customers
- *      responses:
- *          '200':
- *              description: A successful response
- */
-app.get('/customers', (req, res) => {
-    console.log("getting req");
-    res.status(200).send("Fetched Customer results");
-});
-
-/**
- * @swagger
- * /customer:
- *  put:
- *      description: Use to create a customer
- *      responses:
- *          '201':
- *              description: A successful response
- */
-app.put('/customer', (req, res) => {
-    res.status(200).send("Successfully Created customer");
-});
+//app.use('/api/admin', require('./routes/userRoutes'));
 
 app.listen(port, () => {
     console.log(`Server is running on port ${port}....`);
