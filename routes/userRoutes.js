@@ -5,7 +5,7 @@ const Users = require('../dev-data/data/UsersData');
 
 /**
  * @swagger
- * /users:
+ * /api/admin:
  *  get:
  *      description: Use to request all customers
  *      responses:
@@ -16,7 +16,7 @@ router.get('/', (req, res) => res.json(Users));
 
 /**
  * @swagger
- * /user:
+ * /api/admin:
  *  put:
  *      description: Use to create a user
  *      responses:
@@ -26,3 +26,5 @@ router.get('/', (req, res) => res.json(Users));
 router.put('/', (req, res) => {
     res.status(200).send("Successfully Created admin user");
 });
+
+module.exports = router;
