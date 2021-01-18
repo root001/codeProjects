@@ -12,9 +12,15 @@ const xss = require('xss-clean');
 const rateLimit = require('express-rate-limit');
 const swaggerJsDoc = require('swagger-jsdoc');
 const swaggerUi = require('swagger-ui-express');
+const { notFound, errorHandler } = require('./middleware/errorMiddleware')
 const swaggerDocument = require('./configs/swagger.json');
 const hpp = require('hpp');
 const connectDB = require('./configs/mongodb-config');
+
+
+
+//Route files
+const authRoute = require('./routes/authRoute')
 
 //load env vars
 dotenv.config();
@@ -54,6 +60,10 @@ app.use(helmet());
 // Prevent XSS attacks
 app.use(xss());
 
+
+//prevent http param pollution
+app.use(hpp());
+
 // Rate limiting
 const limiter = rateLimit({
     windowMs: 10 * 60 * 1000, //10mins
@@ -62,8 +72,14 @@ const limiter = rateLimit({
 
 app.use(limiter);
 
-// prevent http param pollution
-app.use(hpp());
+
+const version = process.env.VERSION || 'v1.0.0';
+
+//mount routes
+app.use(`/api/${version}/auth`, authRoute);
+
+app.use(errorHandler);
+app.use(notFound);
 
  
 const PORT = parseInt(process.env.PORT) || 5000;
@@ -75,7 +91,7 @@ const server = app.listen(PORT, logger.info(`server running in ${process.env.NOD
 
 //handle unhandled promise rejections
 process.on('unhandledRejection', (err, Promise) => {
-    console.log(`Error: ${err.message}`.red);
+    logger.info(`Error: ${err.message}`.rainbow);
 
     //close server & exit process
     server.close(() => process.exit(1));
