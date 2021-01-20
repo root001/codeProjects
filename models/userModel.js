@@ -1,31 +1,57 @@
-import mongoose from 'mongoose'
-import bcrypt from 'bcryptjs'
+const mongoose = require('mongoose');
+const bcrypt = require('bcryptjs');
 
 const userSchema = mongoose.Schema({
     name: {
         type: String,
         required: true,
     },
+
     email: {
+        type: String,
+        trim: ' ',
+        minlength: 5,
+        maxlength: 100,
+        required: [true, 'Please add a valid email address'],
+        unique: true,
+        match: [
+            /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/,
+            'Please add a valid email'
+        ]
+    },
+
+    phone: {
         type: String,
         required: true,
         unique: true,
+        trim: '',
+        minlength: 10,
+        maxlength: 30,
     },
+
     password: {
         type: String,
-        required: true,
+        required: [true, 'Please add a password'],
+        minlength: 8,
+        select: false,
+        match: [
+            /(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{6,}/,
+            'password must contain at least one digit, one lower case, one upper case'
+        ]
     },
     isAdmin: {
         type: Boolean,
         required: true,
         default: false,
     },
+    resetPasswordToken: String,
+    resetPasswordExpire: Date,
 }, {
     timestamps: true,
 })
 
 userSchema.methods.matchPassword = async function(enteredPassword) {
-    return await bcrypt.compare(enteredPassword, this.password)
+    return await bcrypt.compare(enteredPassword, this.password);
 }
 
 userSchema.pre('save', async function(next) {
@@ -39,4 +65,4 @@ userSchema.pre('save', async function(next) {
 
 const User = mongoose.model('User', userSchema)
 
-export default User
+module.exports = User;
