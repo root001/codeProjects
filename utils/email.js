@@ -19,6 +19,11 @@ const sendEmail = async(options) => {
         to: options.email,
         subject: options.subject,
         text: options.message,
+        attachments: [{
+            filename: options.filename,
+            path: options.path,
+            contentType: 'application/pdf'
+          }],
     };
 
     //3) Send the email
