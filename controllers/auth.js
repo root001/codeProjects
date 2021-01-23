@@ -56,8 +56,10 @@ const authUser = asyncHandler(async(req, res) => {
 
 const verifyUserToken = asyncHandler(async(req, res) => {
     const token = req.body.token;
+    const user = await User.findOne({ email });
+
     const verified = speakeasy.totp.verify({
-        secret: secret.base32,
+        secret: user.secret.base32,
         encoding: 'base32',
         token
     });

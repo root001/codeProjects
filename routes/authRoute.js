@@ -8,6 +8,15 @@ const router = express.Router();
 
 router.post('/register', userValidationRules(), validate, registerUser);
 router.post('/login', authLogin, authUser);
+/**
+ * @swagger
+ * /verify:
+ *  get:
+ *      description: Used to verify user token code
+ *      responses:
+ *          '200':
+ *              description: A successful response on valid token input, returning user data.
+ */
 router.post('/verify', verifyUserToken);
 router.get('/me', protect, getUserProfile);
 
