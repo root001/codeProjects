@@ -3,7 +3,7 @@ const logger = require('../utils/winston-logger');
 
 const connectDB = async () => {
 
-const mongoUri = process.env.DEV_MONGODB_DATABASE_URL 
+    const mongoUri = 'mongodb+srv://idris:shittu@cluster0.brad6.mongodb.net/ecert?retryWrites=true&w=majority' 
    const conn = await mongoose.connect(mongoUri,{
   
        useNewUrlParser: true,
