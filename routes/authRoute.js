@@ -1,13 +1,32 @@
 const express = require('express');
+
 const { protect } = require('../middleware/authMiddleware');
-const { registerUser, authUser, verifyUserToken, getUserProfile } = require('../controllers/auth');
+
+const { 
+  registerUser, 
+  authUser,
+  verifyUserToken,
+  getUserProfile, 
+  forgotPassword,
+  logout,
+  updatePassword,
+  updateDetails,
+  resetPassword } = require('../controllers/auth');
+
 const { userValidationRules, validate } = require('../middleware/authReg-validator');
+
 const authLogin = require('../middleware/authLogin-validator');
 
 const router = express.Router();
 
 router.post('/register', userValidationRules(), validate, registerUser);
 router.post('/login', authLogin, authUser);
+router.get('/logout', logout);
+router.post('/forgotpassword', forgotPassword);
+router.put('/resetpassword/:resettoken', resetPassword);
+router.put('/updatedetails', protect, updateDetails);
+router.put('/updatepassword', protect, updatePassword);
+
 /**
  * @swagger
  * /verify:
