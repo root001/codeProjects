@@ -170,7 +170,7 @@ const sendTokenResponse = (user, statusCode, res ) => {
 //@route  POST  /api/v1.0.0/auth/forgotpassword
 //@access Public
 
-exports.forgotPassword = asyncHandler(async (req, res, next) => {
+const forgotPassword = asyncHandler(async (req, res, next) => {
   
   const user = await User.findById({ email: req.body.email});
 
@@ -216,7 +216,7 @@ exports.forgotPassword = asyncHandler(async (req, res, next) => {
 //@route      POST /api/v1.0.0/auth/resetpassword/:resettoken
 //@access     Public
 
-exports.resetPassword = asyncHandler(async(req, res) => {
+const resetPassword = asyncHandler(async(req, res) => {
 
   // Get hashed token
   const resetPasswordToken = crypto
@@ -249,7 +249,7 @@ exports.resetPassword = asyncHandler(async(req, res) => {
 //@desc      Update users details
 //@route      PUT /api/v1.0.0/auth/updatedetails
 //@access     PRIVATE
-exports.updateDetails = asyncHandler(async(req, res, next) => {
+const updateDetails = asyncHandler(async(req, res, next) => {
 
   const fieldsToUpdate = {
     name : req.body.name,
@@ -272,7 +272,7 @@ exports.updateDetails = asyncHandler(async(req, res, next) => {
 //@desc       Update password
 //@route      PUT /api/v1.0.0/auth/updatepassword
 //@access     PRIVATE
-exports.updatePassword = asyncHandler(async(req, res, next) => {
+const updatePassword = asyncHandler(async(req, res, next) => {
 
   const user = await User.findById(req.user.id).select('+password')
   
@@ -293,7 +293,7 @@ exports.updatePassword = asyncHandler(async(req, res, next) => {
 //@desc   Log user out / clear cookie
 //@route  GET  /api/v1.0.0/auth/logout
 //@access private
-exports.logout = asyncHandler(async (req, res, next) => {
+const logout = asyncHandler(async (req, res, next) => {
  
   res.cookie('token', 'none', { expires: new Date(Date.now() + 10 * 1000 ), httpOnly: true });
 
