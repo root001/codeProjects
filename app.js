@@ -16,17 +16,32 @@ const { notFound, errorHandler } = require('./middleware/errorMiddleware');
 const hpp = require('hpp');
 const connectDB = require('./configs/mongodb-config');
 
+const cors = require('cors');
+//Scoket io Chat
+const chatServer = require('http').createServer(express);
+const client = require("socket.io")(chatServer, {
+    cors: {
+        origin: "http://localhost:3000",
+        methods: ["GET", "POST", "PUT"],
+        credentials: true
+    }
+});
 
+const Chat = require('./models/chatModel');
 
 //Route files
-const authRoute = require('./routes/authRoute')
+const authRoute = require('./routes/authRoute');
+const version = process.env.VERSION || 'v1.0.0';
+
+const app = express();
 
 //load env vars
 dotenv.config();
 
-connectDB()
+//disbale cors across all requests
+app.use(cors())
 
-const app = express();
+connectDB()
 
 app.use(express.json());
 
@@ -59,6 +74,8 @@ app.use(
 
 //ROUTES
 app.use('/api/admin', require('./routes/userRoutes'));
+app.use('/api/chat', require('./routes/chatRoute'));
+app.use('/api/auth', authRoute);
 
 // Server logs
 const accessLogStream = fs.createWriteStream(path.join(__dirname, 'logs', 'access.log'), { flags: 'a' });
@@ -88,12 +105,6 @@ const limiter = rateLimit({
 
 app.use(limiter);
 
-
-const version = process.env.VERSION || 'v1.0.0';
-
-//mount routes
-app.use(`/api/${version}/auth`, authRoute);
-
 app.use(errorHandler);
 app.use(notFound);
 
@@ -103,8 +114,6 @@ const PORT = parseInt(process.env.PORT) || 5000;
 
 const server = app.listen(PORT, logger.info(`server running in ${process.env.NODE_ENV} mode on port ${PORT}`.yellow.bold));
 
-
-
 //handle unhandled promise rejections
 process.on('unhandledRejection', (err, Promise) => {
     logger.info(`Error: ${err.message}`.rainbow);
@@ -112,3 +121,68 @@ process.on('unhandledRejection', (err, Promise) => {
     //close server & exit process
     server.close(() => process.exit(1));
 });
+
+
+
+//Socket io chat bot.
+//connect to socket.io
+client.on('connection', function(socket) {
+
+    //create function to send status
+    sendStatus = function(s) {
+        socket.emit('status', s);
+    }
+
+    //select top 100 chats
+    // const userChat = Chat.find().sort('_id').limit(20);
+    Chat.find({}, function(err, chats) {
+        console.log(chats);
+        if (err) {
+            throw err;
+        }
+        //Emit the messages
+        socket.emit('output', chats);
+    });
+
+    /**  
+     if (userChat) {
+         try {
+             const stringChat = JSON.stringify(userChat);
+             socket.emit('output', stringChat);
+         } catch (err) {
+             return (err.toString() === 'TypeError: Converting circular structure to JSON');
+         }
+     } else {
+         socket.emit('output', 'No chat for user');
+     }
+     
+         Chat.find.limit(100).sort({ _id: 1 }).toArray(function(err, res) {
+             if (err) {
+                 throw err;
+             }
+             //Emit the messages
+             socket.emit('output', res);
+         });
+     */
+    //Handle input events
+    socket.on('input', function(data) {
+        let name = data.name;
+        let message = data.message;
+
+        if (name == '' || message == '') {
+            //send error status
+            sendStatus('Please enter a message');
+        } else {
+            Chat.create({ name: name, message: message }, function() {
+                client.emit('output', [data]);
+                //send status object
+                sendStatus({
+                    message: 'Message sent',
+                    clear: true
+                });
+            });
+        }
+    });
+
+});
+chatServer.listen(4000);

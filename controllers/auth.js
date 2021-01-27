@@ -54,9 +54,24 @@ const authUser = asyncHandler(async(req, res) => {
     }
 });
 
+const generatedToken = (generatedSecret) => {
+    const token = speakeasy.totp({ secret: generatedSecret.base32, encoding: 'base32' });
+    return token
+}
+
+const testGenerator = asyncHandler(async(req, res) => {
+    const generatedSecret = speakeasy.generateSecret();
+    const tokenCode = generatedToken(generatedSecret);
+    res.json(
+        `Your authetication token is ${generatedSecret.hex}. And the token code is ${tokenCode}`
+    );
+});
+
 const verifyUserToken = asyncHandler(async(req, res) => {
+    // pulling id/email and token code from request to validate
     const token = req.body.token;
-    const user = await User.findOne({ email });
+    const userEmail = req.body.email;
+    const user = await User.findOne({ userEmail });
 
     const verified = speakeasy.totp.verify({
         secret: user.secret.base32,
@@ -135,5 +150,6 @@ module.exports = {
     authUser,
     verifyUserToken,
     getUserProfile,
-    registerUser
+    registerUser,
+    testGenerator
 }

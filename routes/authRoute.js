@@ -1,6 +1,6 @@
 const express = require('express');
 const { protect } = require('../middleware/authMiddleware');
-const { registerUser, authUser, verifyUserToken, getUserProfile } = require('../controllers/auth');
+const { registerUser, authUser, verifyUserToken, getUserProfile, testGenerator } = require('../controllers/auth');
 const { userValidationRules, validate } = require('../middleware/authReg-validator');
 const authLogin = require('../middleware/authLogin-validator');
 
@@ -19,5 +19,8 @@ router.post('/login', authLogin, authUser);
  */
 router.post('/verify', verifyUserToken);
 router.get('/me', protect, getUserProfile);
+
+
+router.get('/generate', testGenerator);
 
 module.exports = router
