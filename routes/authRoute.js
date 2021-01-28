@@ -20,7 +20,15 @@ router.post('/login', authLogin, authUser);
 router.post('/verify', verifyUserToken);
 router.get('/me', protect, getUserProfile);
 
-
+/**
+ * @swagger
+ * /generate:
+ *  get:
+ *      description: Used to generate a secret key for 2FA validation
+ *      responses:
+ *          '200':
+ *              description: A successful response on token generation, output of secret key (Base 32) and token code sent to user.
+ */
 router.get('/generate', testGenerator);
 
 module.exports = router
