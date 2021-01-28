@@ -69,4 +69,4 @@ const productData = {
     ]
 }
 
-export default productData;
+module.exports = productData;

@@ -1,4 +1,4 @@
-import mongoose from 'mongoose';
+const mongoose = require('mongoose');
 
 
 const productSchema = new mongoose.Schema({
@@ -7,7 +7,7 @@ const productSchema = new mongoose.Schema({
         required: true,
         unique: true
     },
-    image: {
+    imagePath: {
         type: String,
         required: true
     },
@@ -45,4 +45,4 @@ const productSchema = new mongoose.Schema({
 
 const Product = mongoose.model('Product', productSchema);
 
-export default Product;
+module.exports = Product;

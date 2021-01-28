@@ -20,6 +20,7 @@ const connectDB = require('./configs/mongodb-config');
 
 //Route files
 const authRoute = require('./routes/authRoute')
+//const productRoute = require('./routes/productRoutes')
 
 //load env vars
 dotenv.config();
@@ -59,6 +60,8 @@ app.use(
 
 //ROUTES
 app.use('/api/admin', require('./routes/userRoutes'));
+app.use('/api/products', require('./routes/productRoutes'));
+app.use('/api/cart', require('./routes/cartRoutes'));
 
 // Server logs
 const accessLogStream = fs.createWriteStream(path.join(__dirname, 'logs', 'access.log'), { flags: 'a' });
