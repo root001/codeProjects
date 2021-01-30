@@ -63,6 +63,7 @@ app.use(`/api/auth`, authRoute);
 app.use('/api/admin', require('./routes/userRoutes'));
 app.use('/api/products', require('./routes/productRoutes'));
 app.use('/api/cart', require('./routes/cartRoutes'));
+//app.use('/api/email', require('./routes/sendEmail'));
 
 // Server logs
 const accessLogStream = fs.createWriteStream(path.join(__dirname, 'logs', 'access.log'), { flags: 'a' });
