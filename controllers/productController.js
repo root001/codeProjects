@@ -1,5 +1,5 @@
 const Product = require('../models/productModel.js');
-const productData = require("../dev-data/data/productData.js")
+const productData = require("../dev-data/data/productData.js");
 const expressAsyncHandler = require('express-async-handler');
 
 const seedProducts = expressAsyncHandler(async (req, res) => {
@@ -14,7 +14,8 @@ const getProducts = expressAsyncHandler(async (req, res) => {
 });
 
 const getProductById = expressAsyncHandler(async (req, res) => {
-    const product = Product.findById(req.params.id);
+  const _id = req.params.id;
+    const product = await Product.findById(_id);
     if (product) {
         res.status(200).send(product)
     } else {
