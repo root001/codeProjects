@@ -2,7 +2,6 @@ const path = require('path');
 const express = require('express');
 const dotenv = require('dotenv');
 const morgan = require('morgan');
-const colors = require('colors');
 const logger = require('./utils/winston-logger');
 const fs = require('fs');
 const mongoSanitize = require('express-mongo-sanitize');
@@ -15,16 +14,15 @@ const swaggerUi = require('swagger-ui-express');
 const { notFound, errorHandler } = require('./middleware/errorMiddleware');
 const hpp = require('hpp');
 const connectDB = require('./configs/mongodb-config');
-
-
+const colors = require('colors');
 
 //Route files
 const authRoute = require('./routes/authRoute')
-//const productRoute = require('./routes/productRoutes')
 
 //load env vars
 dotenv.config();
 
+//initate Database connection.
 connectDB()
 
 const app = express();
@@ -38,10 +36,10 @@ app.use(setResHeaders);
 const swaggerOptions = {
     swaggerDefinition: {
         info: {
-            title: 'Customer API',
-            description: 'Customer API information',
+            title: 'E-Commerce Backend API',
+            description: 'E-Commerce API Information',
             contact: {
-                name: "Code project"
+                name: "Code Project"
             },
             servers: ["http://localhost:5000"]
         }
@@ -58,10 +56,14 @@ app.use(
     })
 );
 
+const version = process.env.VERSION || 'v1.0.0';
+
 //ROUTES
+app.use(`/api/auth`, authRoute);
 app.use('/api/admin', require('./routes/userRoutes'));
 app.use('/api/products', require('./routes/productRoutes'));
 app.use('/api/cart', require('./routes/cartRoutes'));
+//app.use('/api/email', require('./routes/sendEmail'));
 
 // Server logs
 const accessLogStream = fs.createWriteStream(path.join(__dirname, 'logs', 'access.log'), { flags: 'a' });
@@ -79,7 +81,6 @@ app.use(helmet());
 // Prevent XSS attacks
 app.use(xss());
 
-
 //prevent http param pollution
 app.use(hpp());
 
@@ -88,25 +89,13 @@ const limiter = rateLimit({
     windowMs: 10 * 60 * 1000, //10mins
     max: 100
 })
-
 app.use(limiter);
-
-
-const version = process.env.VERSION || 'v1.0.0';
-
-//mount routes
-app.use(`/api/${version}/auth`, authRoute);
 
 app.use(errorHandler);
 app.use(notFound);
 
-
 const PORT = parseInt(process.env.PORT) || 5000;
-
-
 const server = app.listen(PORT, logger.info(`server running in ${process.env.NODE_ENV} mode on port ${PORT}`.yellow.bold));
-
-
 
 //handle unhandled promise rejections
 process.on('unhandledRejection', (err, Promise) => {

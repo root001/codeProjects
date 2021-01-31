@@ -6,6 +6,12 @@ const sendEmail = require('../utils/email');
 
 const User = require('../models/userModel');
 
+
+const generatedToken = (generatedSecret) => {
+    const token = speakeasy.totp({ secret: generatedSecret.base32, encoding: 'base32' });
+    return token
+}
+
 // @desc    Auth user & get token
 // @route   POST /api/users/login
 // @access  Public
@@ -22,14 +28,15 @@ const authUser = asyncHandler(async(req, res) => {
         //currently acting as a placeholder check for is2FAEnabled - boolean 
         if (user.isAdmin) {
             const generatedSecret = speakeasy.generateSecret();
-            const message = `Your authetication token is ${generatedSecret.body.token}.`;
+            const tokenCode = generatedToken(generatedSecret);
+            const message = `Your authetication token is ${tokenCode}.`;
 
             user.secret = generatedSecret.base32;
             await User.save({ validateBeforeSave: false });
             try {
                 await sendEmail({
                     email: user.email,
-                    subject: 'Your password reset token (valid for 10 min)',
+                    subject: 'Your password reset token (valid for 30 seconds)',
                     message,
                 });
 
@@ -58,10 +65,11 @@ const authUser = asyncHandler(async(req, res) => {
 
 const verifyUserToken = asyncHandler(async(req, res) => {
     const token = req.body.token;
-    const user = await User.findOne({ email });
+    const id = req.body.id;
+    const user = await User.findOne({ id });
 
     const verified = speakeasy.totp.verify({
-        secret: user.secret.base32,
+        secret: user.secret,
         encoding: 'base32',
         token
     });
@@ -139,28 +147,28 @@ const registerUser = asyncHandler(async(req, res) => {
 //////////////////////
 
 // Get token from model, create cookie and send response
-const sendTokenResponse = (user, statusCode, res ) => {
-   const token = user.getSignedJwtToken()
+const sendTokenResponse = (user, statusCode, res) => {
+    const token = user.getSignedJwtToken()
 
-   const options = {
-     expires: new Date(Date.now() + process.env.JWT_COOKIE_EXPIRE * 24 * 60 * 60 * 1000),
-     httpOnly: true
-   };
+    const options = {
+        expires: new Date(Date.now() + process.env.JWT_COOKIE_EXPIRE * 24 * 60 * 60 * 1000),
+        httpOnly: true
+    };
 
-   if( process.env.NODE_ENV === 'production') {
+    if (process.env.NODE_ENV === 'production') {
 
-    options.httpOnly = true;
+        options.httpOnly = true;
 
-   }
+    }
 
-   res
-   .status(statusCode)
-   .cookie('token', token, options)
-   .json({
-     success: true,
-     token, 
-     user
-   })
+    res
+        .status(statusCode)
+        .cookie('token', token, options)
+        .json({
+            success: true,
+            token,
+            user
+        })
 };
 
 
@@ -170,44 +178,44 @@ const sendTokenResponse = (user, statusCode, res ) => {
 //@route  POST  /api/v1.0.0/auth/forgotpassword
 //@access Public
 
-const forgotPassword = asyncHandler(async (req, res, next) => {
-  
-  const user = await User.findById({ email: req.body.email});
+const forgotPassword = asyncHandler(async(req, res, next) => {
 
-  if (!user) {
-    return res.status(400).json({ errors: [{ msg: "User not found" }] });
-  }
+    const user = await User.findById({ email: req.body.email });
 
-
-  //Get reset token
-  const resetToken = user.getResetPasswordToken();
+    if (!user) {
+        return res.status(400).json({ errors: [{ msg: "User not found" }] });
+    }
 
 
-  await user.save({ validateBeforeSave: false });
+    //Get reset token
+    const resetToken = user.getResetPasswordToken();
 
-    // Create reset url
-  const resetUrl = `${req.protocol}://${req.get('host')}/api/v1.0.0/auth/resetpassword/${resetToken}`;
-
-  
-  const message = `You are receiving this email because you have request for a password reset, please make a PUT request to: \n\n ${resetUrl}`;
-
-  try {
-    
-    await sendEmail({
-      email: user.email,
-      subject: 'Password reset token',
-      message
-    });
-
-    return res.status(200).json({ success: true, data: 'Email sent'});
-  } catch (err) {
-  
-    user.resetPasswordToken = undefined;
-    user.resetPasswordExpire = undefined;
 
     await user.save({ validateBeforeSave: false });
-    return res.status(500).json({ errors: [{ msg: "Email could not be sent" }] });
-  }
+
+    // Create reset url
+    const resetUrl = `${req.protocol}://${req.get('host')}/api/v1.0.0/auth/resetpassword/${resetToken}`;
+
+
+    const message = `You are receiving this email because you have request for a password reset, please make a PUT request to: \n\n ${resetUrl}`;
+
+    try {
+
+        await sendEmail({
+            email: user.email,
+            subject: 'Password reset token',
+            message
+        });
+
+        return res.status(200).json({ success: true, data: 'Email sent' });
+    } catch (err) {
+
+        user.resetPasswordToken = undefined;
+        user.resetPasswordExpire = undefined;
+
+        await user.save({ validateBeforeSave: false });
+        return res.status(500).json({ errors: [{ msg: "Email could not be sent" }] });
+    }
 });
 
 
@@ -218,32 +226,32 @@ const forgotPassword = asyncHandler(async (req, res, next) => {
 
 const resetPassword = asyncHandler(async(req, res) => {
 
-  // Get hashed token
-  const resetPasswordToken = crypto
-  .createHash('sha256')
-  .update(req.params.resettoken)
-  .digest('hex');
+    // Get hashed token
+    const resetPasswordToken = crypto
+        .createHash('sha256')
+        .update(req.params.resettoken)
+        .digest('hex');
 
-  const user = await User.findOne({
-      resetPasswordToken,
-      resetPasswordExpire: { $gt: Date.now() }
-  });
-  
-  
-  if(!user) {
-    return res.status(400).json({ errors: [{ msg: "Invalid token" }] });
-  }
-  
-  //Set new password
-  user.password = req.body.password;
-  user.resetPasswordToken = undefined;
-  user.resetPasswordExpire = undefined;
-  
-  await user.save(); 
-  
+    const user = await User.findOne({
+        resetPasswordToken,
+        resetPasswordExpire: { $gt: Date.now() }
+    });
+
+
+    if (!user) {
+        return res.status(400).json({ errors: [{ msg: "Invalid token" }] });
+    }
+
+    //Set new password
+    user.password = req.body.password;
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpire = undefined;
+
+    await user.save();
+
     sendTokenResponse(user, 200, res);
-  });
-   
+});
+
 
 
 //@desc      Update users details
@@ -251,21 +259,21 @@ const resetPassword = asyncHandler(async(req, res) => {
 //@access     PRIVATE
 const updateDetails = asyncHandler(async(req, res, next) => {
 
-  const fieldsToUpdate = {
-    name : req.body.name,
-    email : req.body.email,
-  }
- 
- const user = await User.findByIdAndUpdate(req.user.id, fieldsToUpdate, {
-       new : true,
-       runValidators: true
- })
- 
-        res.status(200).json({
-            success : true,
-            data: user
-        })
- });
+    const fieldsToUpdate = {
+        name: req.body.name,
+        email: req.body.email,
+    }
+
+    const user = await User.findByIdAndUpdate(req.user.id, fieldsToUpdate, {
+        new: true,
+        runValidators: true
+    })
+
+    res.status(200).json({
+        success: true,
+        data: user
+    })
+});
 
 
 
@@ -274,34 +282,34 @@ const updateDetails = asyncHandler(async(req, res, next) => {
 //@access     PRIVATE
 const updatePassword = asyncHandler(async(req, res, next) => {
 
-  const user = await User.findById(req.user.id).select('+password')
-  
-  // check current password
-  if(!(await user.matchPassword(req.body.currentPassword))) {
-    return res.status(401).json({ errors: [{ msg: "Password is incorrect" }] });
-  }
-  
-  user.password = req.body.newPassword;
-  await user.save();
+    const user = await User.findById(req.user.id).select('+password')
 
-  sendTokenResponse(user, 200, res);
+    // check current password
+    if (!(await user.matchPassword(req.body.currentPassword))) {
+        return res.status(401).json({ errors: [{ msg: "Password is incorrect" }] });
+    }
+
+    user.password = req.body.newPassword;
+    await user.save();
+
+    sendTokenResponse(user, 200, res);
 });
 
- 
+
 
 
 //@desc   Log user out / clear cookie
 //@route  GET  /api/v1.0.0/auth/logout
 //@access private
-const logout = asyncHandler(async (req, res, next) => {
- 
-  res.cookie('token', 'none', { expires: new Date(Date.now() + 10 * 1000 ), httpOnly: true });
+const logout = asyncHandler(async(req, res, next) => {
 
- 
-     res.status(200).json({
-       success : true,
-       data: {}
-     });
+    res.cookie('token', 'none', { expires: new Date(Date.now() + 10 * 1000), httpOnly: true });
+
+
+    res.status(200).json({
+        success: true,
+        data: {}
+    });
 });
 
 
