@@ -9,11 +9,11 @@ const productSchema = new mongoose.Schema({
     },
     imagePath: {
         type: String,
-        required: true
+        required: false
     },
     brand: {
         type: String,
-        required: true
+        required: false
     },
     category: {
         type: String,
@@ -29,15 +29,15 @@ const productSchema = new mongoose.Schema({
     },
     countInStock: {
         type: Number,
-        required: true
+        required: false
     },
     rating: {
         type: Number,
-        required: true
+        required: false
     },
     numReviews: {
         type: Number,
-        required: true
+        required: false
     }
 }, {
     timestamps: true
